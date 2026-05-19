@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Reader</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#f5f5f0;color:#1a1a1a;font-size:16px;line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:780px;margin:0 auto;padding:40px 20px}
+
+/* Header */
+.header{margin-bottom:32px;text-align:center}
+.header h1{font-size:22px;font-weight:700;color:#111;letter-spacing:-0.3px}
+.header .sub{font-size:14px;color:#57595f;margin-top:4px}
+.header .stats{
+  display:flex;justify-content:center;gap:24px;margin-top:14px;
+  font-size:13px;color:#57595f;
+}
+.header .stats b{color:#1a1a2e;font-weight:600}
+
+/* Search + Tabs */
+.controls{
+  display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;
+}
+.search-box{
+  flex:1;min-width:180px;position:relative;
+}
+.search-box input{
+  width:100%;padding:9px 14px 9px 36px;border:1px solid #e5e7eb;border-radius:8px;
+  background:#fff;font-size:14px;color:#1f2937;outline:none;
+  transition:border-color .15s;
+}
+.search-box input:focus{border-color:#1a1a2e}
+.search-box input::placeholder{color:#9ca3af}
+.search-icon{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  color:#9ca3af;font-size:14px;pointer-events:none;
+}
+.tabs{display:flex;gap:0}
+.tab{
+  padding:9px 22px;border:1px solid #e5e7eb;background:#fff;
+  cursor:pointer;font-size:14px;font-weight:500;color:#57595f;transition:all .15s;
+}
+.tab:first-child{border-radius:8px 0 0 8px}
+.tab:last-child{border-radius:0 8px 8px 0;border-left:none}
+.tab.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
+
+/* Cards */
+.card{
+  background:#fff;border:1px solid #e5e7eb;border-radius:10px;
+  padding:20px 24px;margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03);
+}
+.card-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;font-size:12px;color:#57595f;
+}
+.card-meta .date{font-weight:500}
+.score{
+  font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;
+}
+.score-high{background:#dcfce7;color:#15803d}
+.score-mid{background:#fef3c7;color:#92400e}
+.score-low{background:#fee2e2;color:#b91c1c}
+
+.passage-text{
+  font-size:16px;line-height:1.9;color:#1a1a1a;
+  border-left:3px solid #d1d5db;padding-left:16px;margin-bottom:8px;
+}
+.context{font-size:13px;color:#52525b;font-style:italic;margin-bottom:8px}
+.reason{font-size:13px;color:#57595f;margin-top:6px;line-height:1.6}
+
+/* Insight */
+.insight-type{
+  display:inline-block;padding:2px 10px;border-radius:4px;
+  font-size:11px;font-weight:600;letter-spacing:.3px;
+}
+.t-inconsistency{background:#fef2f2;color:#dc2626}
+.t-evolution{background:#eff6ff;color:#1d4ed8}
+.t-trend{background:#eff6ff;color:#2563eb}
+.t-connection{background:#f0fdf4;color:#15803d}
+.t-prediction{background:#fff7ed;color:#ea580c}
+.insight-text{font-size:16px;line-height:1.9;color:#1a1a1a;margin:10px 0}
+.sources{font-size:12px;color:#57595f;margin-top:6px}
+.sources summary{cursor:pointer;user-select:none}
+.sources summary:hover{color:#374151}
+.source-item{
+  padding:4px 0 4px 12px;border-left:2px solid #e5e7eb;margin-top:6px;
+}
+.source-item .from{font-size:11px;color:#57595f;display:block}
+.source-item .text{font-size:14px;color:#374151;line-height:1.6}
+
+/* Pagination */
+.pager{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:24px;flex-wrap:wrap;
+}
+.pager button{
+  padding:6px 14px;border:1px solid #e5e7eb;border-radius:6px;
+  background:#fff;cursor:pointer;font-size:13px;color:#374151;transition:all .15s;
+}
+.pager button:hover{background:#f9fafb;border-color:#d1d5db}
+.pager button.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager .info{font-size:13px;color:#57595f;margin:0 8px}
+
+.empty{text-align:center;padding:48px 20px;color:#57595f;font-size:15px}
+.highlight{background:#fef08a;border-radius:2px;padding:0 1px}
+
+@media(max-width:600px){
+  .app{padding:24px 14px}
+  .controls{flex-direction:column}
+  .search-box{min-width:100%}
+  .card{padding:16px 18px}
+  .passage-text,.insight-text{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>LLM Reader</h1>
+    <div class="sub">AI 辅助阅读笔记 · 自动提取重要段落与跨文档洞察</div>
+    <div class="stats">
+      <span><b>2</b> 条重要段落</span>
+      <span><b>0</b> 条洞察发现</span>
+      <span>更新于 <b>2026-05-19</b></span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search-box">
+      <span class="search-icon">&#128269;</span>
+      <input type="text" id="search" placeholder="搜索关键词..." oninput="onSearch()">
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('passages',this)">段落</button>
+      <button class="tab" onclick="switchTab('insights',this)">洞察</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+  <div id="pager" class="pager"></div>
+</div>
+
+<script>
+var DATA={"passages":[{"id":4,"file_name":"2026-04-09.md","piece_index":1,"original_text":"过去的一年，是集团从2000年开始实施的市场扩张策略和业已形成的战略布局中获得预期良好回报的一年，房地产项目开发和销售取得快速增长，其结算面积、结算收入、结算净利润分别达112万平方米、44.2亿元和3.82亿元，较上年同期分别增长 62.3% 、 32.1% 和 68.5% 。集团在深圳、上海、北京、沈阳和成都的业务发展获得稳定回报，继续成为集团主要盈利来源；在2001年进入的武汉、南京、长春、南昌四个市场均取得理想业绩，为集团整体盈利作出重要贡献。","importance_score":0.9,"importance_reason":"结算面积增长62.3%、结算净利润增长68.5%，展示了万科2000年启动的全国扩张战略进入收获期，新进入城市已开始贡献利润，验证了跨区域扩张模式的可行性。","context_brief":"回顾2002年市场扩张战略的成果。","file_date":"2026-04-09"},{"id":9,"file_name":"2026-04-09.md","piece_index":2,"original_text":"基于对房地产行业发展的良好预期，为集中资源优势，集团在2001年实现对万佳股权的成功转让，退出零售行业，至此集团的专业化战略调整得以顺利完成。","importance_score":0.95,"importance_reason":"转让万佳、退出零售是万科历史上最重要的战略决策之一，标志着专业化地产商定位的确立。","context_brief":"万科2001年完成战略转型的标志性事件。","file_date":"2026-04-09"}],"insights":[]};
+var tab='passages',query='',page=1,PER=15;
+
+var typeLabels={inconsistency:'不一致性',trend:'趋势变化',connection:'关联发现',evolution:'公司演变',prediction:'预测验证'};
+
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function hi(s){
+  if(!query)return esc(s);
+  var r=new RegExp('('+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+  return esc(s).replace(r,'<span class="highlight">$1</span>');
+}
+
+function match(item){
+  if(!query)return true;
+  var q=query.toLowerCase();
+  if(tab==='passages'){
+    return (item.original_text||'').toLowerCase().includes(q)
+      ||(item.context_brief||'').toLowerCase().includes(q)
+      ||(item.importance_reason||'').toLowerCase().includes(q)
+      ||(item.file_date||'').includes(q);
+  }
+  return (item.content||'').toLowerCase().includes(q)
+    ||(typeLabels[item.insight_type]||'').includes(q);
+}
+
+function getFiltered(){return DATA[tab].filter(match)}
+
+function scoreClass(v){
+  var p=Math.round((v||0)*100);
+  if(p>=70)return 'score-high';
+  if(p>=50)return 'score-mid';
+  return 'score-low';
+}
+
+function renderPassage(p){
+  var sc=Math.round((p.importance_score||0)*100);
+  return '<div class="card">'
+    +'<div class="card-meta"><span class="date">'+(p.file_date||p.file_name)+' #'+p.piece_index+'</span>'
+    +'<span class="score '+scoreClass(p.importance_score)+'">'+sc+'</span></div>'
+    +(p.context_brief?'<div class="context">'+hi(p.context_brief)+'</div>':'')
+    +'<div class="passage-text">'+hi(p.original_text)+'</div>'
+    +(p.importance_reason?'<div class="reason">'+hi(p.importance_reason)+'</div>':'')
+    +'</div>';
+}
+
+function renderInsight(ins){
+  var label=typeLabels[ins.insight_type]||ins.insight_type;
+  var tc='t-'+(ins.insight_type||'connection');
+  var html='<div class="card">'
+    +'<span class="insight-type '+tc+'">'+esc(label)+'</span>'
+    +'<div class="insight-text">'+hi(ins.content)+'</div>';
+  var items=ins.excerpts||[];
+  if(items.length>0){
+    html+='<details class="sources"><summary>来源 ('+items.length+')</summary>';
+    for(var i=0;i<items.length;i++){
+      var s=items[i];
+      html+='<div class="source-item"><span class="from">['+(s.date||'')+'] '+(s.from||'')+'</span><span class="text">'+esc(s.text||'')+'</span></div>';
+    }
+    html+='</details>';
+  }else if(ins.files&&ins.files.length){
+    html+='<div class="sources" style="margin-top:8px">来源: '+esc(ins.files.join(', '))+'</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function render(){
+  var items=getFiltered();
+  var total=items.length;
+  var pages=Math.max(1,Math.ceil(total/PER));
+  if(page>pages)page=pages;
+  var start=(page-1)*PER;
+  var slice=items.slice(start,start+PER);
+  var el=document.getElementById('list');
+
+  if(slice.length===0){
+    el.innerHTML='<div class="empty">'+(query?'未找到匹配结果':'暂无内容')+'</div>';
+  }else{
+    var fn=tab==='passages'?renderPassage:renderInsight;
+    el.innerHTML=slice.map(fn).join('');
+  }
+
+  // Pager
+  var pg=document.getElementById('pager');
+  if(pages<=1){pg.innerHTML='';return}
+
+  var h='<button onclick="go(1)" '+(page===1?'disabled':'')+'>&#171;</button>';
+  h+='<button onclick="go('+(page-1)+')" '+(page===1?'disabled':'')+'>&#8249;</button>';
+
+  // Show max 7 page buttons
+  var lo=Math.max(1,page-3),hi=Math.min(pages,page+3);
+  if(hi-lo<6){if(lo===1)hi=Math.min(pages,7);else lo=Math.max(1,pages-6)}
+  for(var i=lo;i<=hi;i++){
+    h+='<button onclick="go('+i+')"'+(i===page?' class="active"':'')+'>'+i+'</button>';
+  }
+
+  h+='<button onclick="go('+(page+1)+')" '+(page===pages?'disabled':'')+'>&#8250;</button>';
+  h+='<button onclick="go('+pages+')" '+(page===pages?'disabled':'')+'>&#187;</button>';
+  h+='<span class="info">'+total+' 条</span>';
+  pg.innerHTML=h;
+}
+
+function go(p){page=p;render();window.scrollTo(0,0)}
+
+function switchTab(t,btn){
+  tab=t;page=1;
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+  render();
+}
+
+var searchTimer;
+function onSearch(){
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(function(){
+    query=document.getElementById('search').value.trim();
+    page=1;
+    render();
+  },200);
+}
+
+render();
+</script>
+</body>
+</html>
