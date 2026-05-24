@@ -159,23 +159,33 @@ body{
 .katex-display{margin:12px 0!important;overflow-x:auto}
 
 /* TTS */
-.tts-ctrl{
-  display:inline-flex;align-items:center;gap:6px;
-  margin-top:12px;
+.tts-ctrl{display:inline-flex;align-items:center;gap:6px}
+.tts-btn-play{
+  width:36px;height:36px;border:1px solid #e5e7eb;border-radius:50%;
+  background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;color:#374151;flex-shrink:0;
 }
-.tts-ctrl button{
-  padding:4px 14px;border:1px solid #d1d5db;border-radius:6px;
-  background:#fff;cursor:pointer;font-size:12px;color:#374151;
-  font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:4px;
+.tts-btn-play:hover{background:#f3f4f6;border-color:#d1d5db;transform:scale(1.05)}
+.tts-btn-play svg{width:14px;height:14px;fill:currentColor}
+.tts-btn-play.is-playing{
+  background:#1a1a2e;color:#fff;border-color:#1a1a2e;
+  box-shadow:0 0 0 3px rgba(26,26,46,.12);
 }
-.tts-ctrl button:hover{background:#f3f4f6;border-color:#9ca3af}
-.tts-ctrl .tts-playing{background:#1a1a2e;color:#fff;border-color:#1a1a2e;animation:tts-pulse 1.5s ease-in-out infinite}
-.tts-ctrl .tts-playing:hover{background:#2d2d4e}
-.tts-ctrl .tts-stop{color:#b91c1c;border-color:#fca5a5}
-.tts-ctrl .tts-stop:hover{background:#fef2f2}
-.tts-ctrl .tts-status{font-size:12px;color:#57595f}
-.card.tts-speaking{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.15);transition:border-color .2s,box-shadow .2s}
-@keyframes tts-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.tts-btn-play.is-playing:hover{background:#2d2d4e}
+.tts-btn-stop{
+  width:28px;height:28px;border:none;border-radius:50%;
+  background:#f3f4f6;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;color:#9ca3af;flex-shrink:0;
+}
+.tts-btn-stop:hover{background:#fee2e2;color:#b91c1c}
+.tts-btn-stop svg{width:10px;height:10px;fill:currentColor}
+.tts-status{font-size:11px;color:#9ca3af;white-space:nowrap}
+.card.tts-speaking{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.12);transition:border-color .2s,box-shadow .2s}
+@keyframes tts-eq{0%,100%{height:3px}50%{height:10px}}
+.tts-eq{display:inline-flex;align-items:flex-end;gap:1.5px;height:12px;vertical-align:middle;margin-right:2px}
+.tts-eq span{width:2px;background:#fff;border-radius:1px;animation:tts-eq .8s ease-in-out infinite}
+.tts-eq span:nth-child(2){animation-delay:.15s}
+.tts-eq span:nth-child(3){animation-delay:.3s}
 
 @media(max-width:600px){
   .app{padding:24px 14px}
@@ -184,8 +194,8 @@ body{
   .tab{padding:9px 14px;font-size:13px}
   .card{padding:16px 18px}
   .passage-text,.insight-text,.qa-answer{font-size:15px}
-  .tts-ctrl{margin-top:10px}
-  .tts-ctrl button{font-size:11px;padding:2px 10px}
+  .tts-btn-play{width:32px;height:32px}
+  .tts-btn-play svg{width:12px;height:12px}
 }
 </style>
 </head>
@@ -214,8 +224,7 @@ body{
       <button class="tab" onclick="switchTab('qaRecords',this)">我问AI答</button>
     </div>
     <div class="tts-ctrl" id="ttsCtrl">
-      <button onclick="ttsPlay()">&#9654; 播放</button>
-      <span class="tts-status" id="ttsStatus"></span>
+      <button class="tts-btn-play" onclick="ttsPlay()" title="播放"><svg viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg></button>
     </div>
   </div>
 
@@ -484,15 +493,24 @@ var TTS = (function(){
     if(tp!==page){ page=tp; render(); }
   }
 
+  var svgPlay='<svg viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg>';
+  var svgPause='<svg viewBox="0 0 16 16"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>';
+  var svgStop='<svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>';
+  var eqBars='<span class="tts-eq"><span></span><span></span><span></span></span>';
+
   function ui(){
-    var ctrl=document.getElementById('ttsCtrl');
+    var c=document.getElementById('ttsCtrl');
     if(state==='idle'){
-      ctrl.innerHTML='<button onclick="ttsPlay()">&#9654; 播放</button><span class="tts-status" id="ttsStatus"></span>';
+      c.innerHTML='<button class="tts-btn-play" onclick="ttsPlay()" title="播放">'+svgPlay+'</button>';
       clearHL();
     }else if(state==='playing'){
-      ctrl.innerHTML='<button class="tts-playing" onclick="ttsPause()">&#10074;&#10074; 暂停</button><button class="tts-stop" onclick="ttsStopBtn()">&#9632; 停止</button><span class="tts-status" id="ttsStatus">'+(idx+1)+' / '+total+'</span>';
+      c.innerHTML='<button class="tts-btn-play is-playing" onclick="ttsPause()" title="暂停">'+eqBars+'</button>'
+        +'<button class="tts-btn-stop" onclick="ttsStopBtn()" title="停止">'+svgStop+'</button>'
+        +'<span class="tts-status">'+(idx+1)+' / '+total+'</span>';
     }else{
-      ctrl.innerHTML='<button onclick="ttsResume()">&#9654; 继续</button><button class="tts-stop" onclick="ttsStopBtn()">&#9632; 停止</button><span class="tts-status" id="ttsStatus">已暂停 '+(idx+1)+' / '+total+'</span>';
+      c.innerHTML='<button class="tts-btn-play" onclick="ttsResume()" title="继续">'+svgPlay+'</button>'
+        +'<button class="tts-btn-stop" onclick="ttsStopBtn()" title="停止">'+svgStop+'</button>'
+        +'<span class="tts-status">已暂停 '+(idx+1)+' / '+total+'</span>';
     }
   }
 
