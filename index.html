@@ -212,29 +212,33 @@ function md(s){
   try{return marked.parse(s)}catch(e){return esc(s)}
 }
 
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+
 function hi(s,asMarkdown){
   if(!s)return '';
   var html=asMarkdown?md(s):esc(s);
   if(!query)return html;
-  var r=new RegExp('('+query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
-  return html.replace(r,'<span class="highlight">$1</span>');
+  var terms=query.split(/\s+/).filter(Boolean);
+  for(var i=0;i<terms.length;i++){
+    var r=new RegExp('('+escRe(terms[i])+')','gi');
+    html=html.replace(r,'<span class="highlight">$1</span>');
+  }
+  return html;
 }
 
 function match(item){
   if(!query)return true;
-  var q=query.toLowerCase();
+  var terms=query.toLowerCase().split(/\s+/).filter(Boolean);
+  var fields;
   if(tab==='passages'){
-    return (item.original_text||'').toLowerCase().includes(q)
-      ||(item.context_brief||'').toLowerCase().includes(q)
-      ||(item.importance_reason||'').toLowerCase().includes(q)
-      ||(item.file_date||'').includes(q);
+    fields=[item.original_text,item.context_brief,item.importance_reason,item.file_date];
+  }else if(tab==='insights'){
+    fields=[item.content,typeLabels[item.insight_type]];
+  }else{
+    fields=[item.question,item.answer];
   }
-  if(tab==='insights'){
-    return (item.content||'').toLowerCase().includes(q)
-      ||(typeLabels[item.insight_type]||'').includes(q);
-  }
-  return (item.question||'').toLowerCase().includes(q)
-    ||(item.answer||'').toLowerCase().includes(q);
+  var all=fields.map(function(f){return(f||'').toLowerCase()}).join(' ');
+  return terms.every(function(t){return all.includes(t)});
 }
 
 function getFiltered(){return DATA[tab].filter(match)}
@@ -320,9 +324,9 @@ function render(){
   h+='<button onclick="go('+(page-1)+')" '+(page===1?'disabled':'')+'>&#8249;</button>';
 
   // Show max 7 page buttons
-  var lo=Math.max(1,page-3),hi=Math.min(pages,page+3);
-  if(hi-lo<6){if(lo===1)hi=Math.min(pages,7);else lo=Math.max(1,pages-6)}
-  for(var i=lo;i<=hi;i++){
+  var lo=Math.max(1,page-3),ph=Math.min(pages,page+3);
+  if(ph-lo<6){if(lo===1)ph=Math.min(pages,7);else lo=Math.max(1,pages-6)}
+  for(var i=lo;i<=ph;i++){
     h+='<button onclick="go('+i+')"'+(i===page?' class="active"':'')+'>'+i+'</button>';
   }
 
