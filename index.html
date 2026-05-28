@@ -91,6 +91,13 @@ body{
 .t-trend{background:#eff6ff;color:#2563eb}
 .t-connection{background:#f0fdf4;color:#15803d}
 .t-prediction{background:#fff7ed;color:#ea580c}
+.t-relationship{background:#faf5ff;color:#7c3aed}
+.t-comparison{background:#ecfeff;color:#0891b2}
+.t-lesson{background:#fefce8;color:#a16207}
+.t-insight{background:#fdf2f8;color:#be185d}
+.t-signal{background:#f0fdfa;color:#0d9488}
+.t-management{background:#f8fafc;color:#475569}
+.t-risk{background:#fef2f2;color:#b91c1c}
 .insight-text{font-size:16px;line-height:1.9;color:#1a1a1a;margin:10px 0}
 .sources{font-size:12px;color:#57595f;margin-top:6px}
 .sources summary{cursor:pointer;user-select:none}
@@ -237,7 +244,7 @@ var DATA={"passages":[{"id":456,"file_name":"2026-05-25.md","piece_index":0,"ori
 var tab='passages',query='',page=1,PER=15;
 marked.setOptions({breaks:true,gfm:true});
 
-var typeLabels={inconsistency:'不一致性',trend:'趋势变化',connection:'关联发现',evolution:'公司演变',prediction:'预测验证'};
+var typeLabels={inconsistency:'不一致性',trend:'趋势变化',connection:'关联发现',evolution:'公司演变',prediction:'预测验证',relationship:'关系图谱',comparison:'对比分析',lesson:'投资启示',insight:'认知更新',signal:'信号捕捉',management:'管理评估',risk:'风险识别'};
 
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
