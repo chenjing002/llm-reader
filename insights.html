@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>洞察发现 — AI 辅助阅读笔记 | LLM Reader</title>
+<meta name="description" content="AI 辅助深度阅读：自动提取重要段落、跨文档洞察发现与智能问答。涵盖投资者信件、年报等文档的深度分析。">
+<meta name="keywords" content="AI阅读,LLM Reader,投资分析,股东信,深度阅读,智能笔记">
+<meta property="og:title" content="洞察发现 — LLM Reader">
+<meta property="og:description" content="AI 辅助深度阅读：自动提取重要段落、跨文档洞察发现与智能问答。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://aimunger.com/llm-reader/">
+<meta property="og:site_name" content="aimunger">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="洞察发现 — LLM Reader">
+<meta name="twitter:description" content="AI 辅助深度阅读：自动提取重要段落、跨文档洞察发现与智能问答。">
+<link rel="canonical" href="https://aimunger.com/llm-reader/">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.4/marked.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --color-bg:#fafaf9;--color-text:#1a1a1a;--color-text-secondary:#6b6b6b;
+  --color-accent:#8b2500;--color-border:#e8e4df;--color-card-bg:#fff;
+  --font-serif:'Noto Serif SC',serif;--font-sans:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+body{
+  font-family:var(--font-sans);
+  background:var(--color-bg);color:var(--color-text);font-size:16px;line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:780px;margin:0 auto;padding:40px 20px}
+
+/* Site Header */
+.site-header{
+  position:fixed;top:0;left:0;right:0;
+  background:rgba(250,250,249,0.92);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--color-border);z-index:100;
+}
+.site-nav{
+  max-width:780px;margin:0 auto;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;height:60px;
+}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--color-text)}
+.logo-icon{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;background:var(--color-accent);color:#fff;
+  font-family:var(--font-serif);font-weight:700;font-size:16px;border-radius:7px;
+}
+.logo-text{font-family:var(--font-serif);font-weight:700;font-size:18px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{
+  padding:6px 16px;border-radius:6px;font-size:14px;font-weight:500;
+  color:var(--color-text-secondary);text-decoration:none;transition:all .15s;
+}
+.nav-link:hover{background:#f0ece7;color:var(--color-text)}
+.nav-link.active{background:var(--color-accent);color:#fff}
+
+/* Page Header */
+.header{margin-bottom:32px;text-align:center;padding-top:60px}
+.header h1{font-family:var(--font-serif);font-size:22px;font-weight:700;color:var(--color-text);letter-spacing:0.5px}
+.header .sub{font-size:14px;color:var(--color-text-secondary);margin-top:4px}
+.header .stats{
+  display:flex;justify-content:center;gap:24px;margin-top:14px;
+  font-size:13px;color:var(--color-text-secondary);
+}
+.header .stats b{color:var(--color-accent);font-weight:600}
+
+/* Search */
+.controls{
+  display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;
+}
+.search-box{
+  flex:1;min-width:180px;position:relative;
+}
+.search-box input{
+  width:100%;padding:9px 14px 9px 36px;border:1px solid var(--color-border);border-radius:8px;
+  background:#fff;font-size:14px;color:var(--color-text);outline:none;
+  transition:border-color .15s;
+}
+.search-box input:focus{border-color:var(--color-accent)}
+.search-box input::placeholder{color:#9ca3af}
+.search-icon{
+  position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  color:#9ca3af;font-size:14px;pointer-events:none;
+}
+
+/* Cards */
+.card{
+  background:var(--color-card-bg);border:1px solid var(--color-border);border-radius:14px;
+  padding:20px 24px;margin-bottom:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.03);
+  transition:border-color .3s ease,box-shadow .3s ease;
+}
+.card:hover{
+  border-color:var(--color-accent);
+  box-shadow:0 8px 32px rgba(139,37,0,.08),0 2px 8px rgba(0,0,0,.04);
+}
+.card-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;font-size:12px;color:var(--color-text-secondary);
+}
+.card-meta .date{font-weight:500}
+.score{
+  font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;
+}
+.score-high{background:#dcfce7;color:#15803d}
+.score-mid{background:#fef3c7;color:#92400e}
+.score-low{background:#fee2e2;color:#b91c1c}
+
+.passage-text{
+  font-size:16px;line-height:1.9;color:var(--color-text);
+  border-left:3px solid var(--color-border);padding-left:16px;margin-bottom:8px;
+}
+.context{font-size:13px;color:var(--color-text-secondary);font-style:italic;margin-bottom:8px}
+.reason{font-size:13px;color:var(--color-text-secondary);margin-top:6px;line-height:1.6}
+
+/* Insight */
+.insight-type{
+  display:inline-block;padding:2px 10px;border-radius:4px;
+  font-size:11px;font-weight:600;letter-spacing:.3px;
+}
+.t-inconsistency{background:#fef2f2;color:#dc2626}
+.t-evolution{background:#eff6ff;color:#1d4ed8}
+.t-trend{background:#eff6ff;color:#2563eb}
+.t-connection{background:#f0fdf4;color:#15803d}
+.t-prediction{background:#fff7ed;color:#ea580c}
+.t-relationship{background:#faf5ff;color:#7c3aed}
+.t-comparison{background:#ecfeff;color:#0891b2}
+.t-lesson{background:#fefce8;color:#a16207}
+.t-insight{background:#fdf2f8;color:#be185d}
+.t-signal{background:#f0fdfa;color:#0d9488}
+.t-management{background:#f8fafc;color:#475569}
+.t-risk{background:#fef2f2;color:#b91c1c}
+.insight-text{font-size:16px;line-height:1.9;color:var(--color-text);margin:10px 0}
+.sources{font-size:12px;color:var(--color-text-secondary);margin-top:6px}
+.sources summary{cursor:pointer;user-select:none}
+.sources summary:hover{color:#374151}
+.source-item{
+  padding:4px 0 4px 12px;border-left:2px solid #e5e7eb;margin-top:6px;
+}
+.source-item .from{font-size:11px;color:var(--color-text-secondary);display:block}
+.source-item .text{font-size:14px;color:#374151;line-height:1.6}
+
+/* Pagination */
+.pager{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  margin-top:24px;flex-wrap:wrap;
+}
+.pager button{
+  padding:6px 14px;border:1px solid var(--color-border);border-radius:6px;
+  background:#fff;cursor:pointer;font-size:13px;color:#374151;transition:all .15s;
+}
+.pager button:hover{background:#f9fafb;border-color:#d1d5db}
+.pager button.active{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager .info{font-size:13px;color:var(--color-text-secondary);margin:0 8px}
+
+/* QA */
+.qa-question{
+  font-size:16px;font-weight:600;color:var(--color-accent);margin-bottom:10px;
+  padding-left:16px;border-left:3px solid var(--color-accent);
+}
+.qa-answer{
+  font-size:16px;line-height:1.9;color:var(--color-text);
+}
+.qa-answer p{margin:0 0 8px}
+.qa-answer p:last-child{margin-bottom:0}
+
+.empty{text-align:center;padding:48px 20px;color:var(--color-text-secondary);font-size:15px}
+.highlight{background:#fef08a;border-radius:2px;padding:0 1px}
+
+/* Markdown rendered content */
+.passage-text p,.insight-text p{margin:0 0 8px}
+.passage-text p:last-child,.insight-text p:last-child{margin-bottom:0}
+.passage-text h1,.passage-text h2,.passage-text h3,
+.insight-text h1,.insight-text h2,.insight-text h3{margin:12px 0 6px;font-weight:600}
+.passage-text h1,.insight-text h1{font-size:1.3em}
+.passage-text h2,.insight-text h2{font-size:1.15em}
+.passage-text h3,.insight-text h3{font-size:1.05em}
+.passage-text ul,.passage-text ol,.insight-text ul,.insight-text ol{margin:6px 0 6px 20px}
+.passage-text li,.insight-text li{margin-bottom:4px}
+.passage-text code,.insight-text code{
+  background:#f3f4f6;padding:1px 5px;border-radius:3px;font-size:0.9em;
+}
+.passage-text pre,.insight-text pre{
+  background:#f3f4f6;padding:12px;border-radius:6px;overflow-x:auto;margin:8px 0;
+}
+.passage-text pre code,.insight-text pre code{background:none;padding:0}
+.passage-text blockquote,.insight-text blockquote{
+  border-left:3px solid #d1d5db;padding-left:12px;color:#52525b;margin:8px 0;
+}
+.passage-text table,.insight-text table{
+  border-collapse:collapse;margin:8px 0;width:100%;
+}
+.passage-text th,.passage-text td,.insight-text th,.insight-text td{
+  border:1px solid #e5e7eb;padding:6px 10px;text-align:left;font-size:14px;
+}
+.passage-text th,.insight-text th{background:#f9fafb;font-weight:600}
+.katex-display{margin:12px 0!important;overflow-x:auto}
+
+/* TTS */
+.tts-ctrl{display:inline-flex;align-items:center;gap:6px}
+.tts-btn-play{
+  width:36px;height:36px;border:1px solid var(--color-border);border-radius:50%;
+  background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;color:#374151;flex-shrink:0;
+}
+.tts-btn-play:hover{background:#f5f0eb;border-color:var(--color-accent);transform:scale(1.05)}
+.tts-btn-play svg{width:14px;height:14px;fill:currentColor}
+.tts-btn-play.is-playing{
+  background:var(--color-accent);color:#fff;border-color:var(--color-accent);
+  box-shadow:0 0 0 3px rgba(139,37,0,.12);
+}
+.tts-btn-play.is-playing:hover{background:#a52d00}
+.tts-btn-stop{
+  width:28px;height:28px;border:none;border-radius:50%;
+  background:#f3f4f6;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;color:#9ca3af;flex-shrink:0;
+}
+.tts-btn-stop:hover{background:#fee2e2;color:#b91c1c}
+.tts-btn-stop svg{width:10px;height:10px;fill:currentColor}
+.tts-status{font-size:11px;color:var(--color-text-secondary);white-space:nowrap}
+.card.tts-speaking{border-color:var(--color-accent);box-shadow:0 0 0 2px rgba(139,37,0,.12);transition:border-color .2s,box-shadow .2s}
+@keyframes tts-eq{0%,100%{height:3px}50%{height:10px}}
+.tts-eq{display:inline-flex;align-items:flex-end;gap:1.5px;height:12px;vertical-align:middle;margin-right:2px}
+.tts-eq span{width:2px;background:#fff;border-radius:1px;animation:tts-eq .8s ease-in-out infinite}
+.tts-eq span:nth-child(2){animation-delay:.15s}
+.tts-eq span:nth-child(3){animation-delay:.3s}
+
+@media(max-width:600px){
+  .app{padding:24px 14px}
+  .search-box{min-width:100%}
+  .card{padding:16px 18px}
+  .passage-text,.insight-text,.qa-answer{font-size:15px}
+  .tts-btn-play{width:32px;height:32px}
+  .tts-btn-play svg{width:12px;height:12px}
+  .nav-links{gap:2px}
+  .nav-link{padding:6px 10px;font-size:13px}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <nav class="site-nav">
+    <a href="index.html" class="logo">
+      <span class="logo-icon">R</span>
+      <span class="logo-text">LLM Reader</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">段落</a>
+      <a href="insights.html" class="nav-link active">洞察</a>
+      <a href="qa.html" class="nav-link">我问 AI 答</a>
+    </div>
+  </nav>
+</header>
+<div class="app">
+  <div class="header">
+    <h1>见微知著，洞察秋毫</h1>
+    <div class="sub">AI 辅助阅读笔记 · 跨文档洞察</div>
+    <div class="stats">
+      <span><b>48</b> 条洞察发现</span>
+      <span>更新于 <b>2026-05-29</b></span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search-box">
+      <span class="search-icon">&#128269;</span>
+      <input type="text" id="search" placeholder="搜索关键词..." oninput="onSearch()">
+    </div>
+    <div class="tts-ctrl" id="ttsCtrl">
+      <button class="tts-btn-play" onclick="ttsPlay()" title="播放"><svg viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg></button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+  <div id="pager" class="pager"></div>
+</div>
+<footer style="padding:28px 0;text-align:center;border-top:1px solid var(--color-border);color:var(--color-text-secondary);font-size:13px">
+  <p>&copy; 2026 <a href="https://aimunger.com" style="color:var(--color-accent);text-decoration:none">aimunger</a></p>
+</footer>
+
+<script>
+var DATA=[{"id":49,"insight_type":"evolution","content":"中海地产自2006年孔庆平时代提出'投资物业盈利占集团盈利20%'的量化目标，此后在2007-2015年连续十年年报中以几乎完全相同的措辞反复重申，但始终未能实现。2009年目标形式从'占比20%'悄然调整为'2015年租金不少于12亿港元'，实质降标。到2020年颜建国时代，目标再次变形为'2025年商业资产管理收入120亿元'，而2025年实际仅达72亿元（缺口约40%）。最终，这一跨越近二十年的战略承诺从官方叙事中彻底消失，被REIT资产证券化框架所替代。这是一个经典的'战略目标漂移'案例：管理层通过不断更换目标口径（盈利占比→绝对租金→资管收入→REIT平台），在形式上维持战略连续性的同时，实质上回避了商业地产转型始终未能突破的事实。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2006","from":"中海年报","text":"投资物业盈利占比20%为中期目标"},{"date":"2009","from":"中海年报","text":"2015年租金不少于12亿港元"},{"date":"2020","from":"中海年报","text":"2025年商业资产管理收入目标120亿元"},{"date":"2025","from":"中海年报","text":"商业物业收入72亿元首次覆盖利息支出"},{"date":"2025","from":"中海公司简介","text":"投资物业盈利占比目标已从官方叙事消失"}],"files":["2026-05-08.md","2026-05-11.md","2026-05-10.md"]},{"id":50,"insight_type":"comparison","content":"中海地产与万科在2008-2025年间走出了截然相反的命运曲线，其分野根源可追溯至1997年亚洲金融危机的不同'创伤记忆'。中海因1997年危机形成根深蒂固的财务保守主义，以港企和黄、新鸿基为标杆，2005-2007年行业疯狂扩张期资产负债率仅42-52%，费用率常年低于5%，郁亮本人承认'万科真正的对手是中海'。万科则在同期走向另一极端：事业合伙人制度下管理层'成为主人'的意识催生了'影子万科'体外资金体系（鹏金所+博商系），289亿元坏账损失率高达89%。2025年结局：中海以130亿元核心利润、2.8%融资成本、行业最高信用评级维持行业第一；万科两年合计巨亏约1380亿元，其中信用减值（体外资金坏账）占最大比重。同一行业、同一周期，治理逻辑的差异导致了'冰火两重天'的终局。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2010","from":"经济观察报","text":"中海费用率多年低于5%，万科承认中海是真正对手"},{"date":"2008","from":"中海年报","text":"1997年金融危机教训，以港企为标杆"},{"date":"2025","from":"秦朔文章","text":"博商系坏账准备288亿元，损失率89%"},{"date":"2025","from":"万科年报","text":"两年合计亏损约1380亿元"},{"date":"2025","from":"中海年报","text":"融资成本2.8%历史最低，权益销售行业第一"}],"files":["2026-05-25.md","2026-05-17.md","2026-05-11.md","2026-05-10.md","2026-05-08.md"]},{"id":51,"insight_type":"relationship","content":"傅育宁的职业轨迹串联起三家央企巨头（招商局→华润→万科大股东），其在华润任上与万科管理层的冲突，本质是央企治理传统与职业经理人自主模式的深层碰撞。傅育宁在招商局体系深耕数十年，历任招商银行董事长、招商局国际主席等多个核心职务，习惯于母公司对子公司的强控制模式。2014年接替宋林任华润董事长后，面对的是已运行十余年、管理层高度自治的万科。他明确表示与万科管理层'价值观不同，这是更核心的东西'，而万科管理层引入深铁时绕开董事会的做法进一步激化矛盾。2017年华润以每股22元、总价372亿元清仓退出。事后来看，傅育宁对万科治理问题的判断具有前瞻性——博商系体外资金体系恰恰是治理失控的产物，但华润作为大股东未能纠偏就选择了退出。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2025","from":"秦朔文章","text":"傅育宁认为与万科管理层'价值观不同'"},{"date":"2017","from":"秦朔文章","text":"华润以每股22元总价372亿元清仓退出"},{"date":"2010-2014","from":"招商局履历","text":"傅育宁任招商局董事长兼招商银行董事长"},{"date":"2025","from":"秦朔文章","text":"影子万科体系由鹏金所+博商系构成"}],"files":["2026-05-25.md"]},{"id":52,"insight_type":"prediction","content":"恒隆地产陈启宗在2017年年报中做出两个重要预判：一是'内地零售六年寒冬已结束，奢侈品复苏尤其强劲'；二是'预判2020年起恒隆进入新增长阶段'。第一个判断在短期内得到验证（上海恒隆广场零售额增长26%），但第二个判断遭遇疫情、房地产危机和中美冲突三重黑天鹅。到2022年，陈启宗在年报中做出与五年前截然不同的判断：'香港经济可能高峰已过'、'中美对抗下无中立之地'。讽刺的是，陈启宗本人曾在2017年警告'中国体制易出现黑天鹅事件'、'最大风险是政策决策高度集中导致的政策错误'——他准确预见了风险类型，却未能预见风险会直接冲击自己的增长计划。2024年恒隆24年来首次录得内地租赁收入减少，陈启宗之子陈文博接任后转向轻资产防御策略。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2017","from":"恒隆年报","text":"预判2020年起进入新增长阶段"},{"date":"2017","from":"恒隆年报","text":"中国体制易出现黑天鹅事件"},{"date":"2022","from":"恒隆年报","text":"香港经济可能高峰已过"},{"date":"2024","from":"恒隆年报","text":"24年来首次录得内地租赁收入减少"},{"date":"2025","from":"恒隆年报","text":"恒隆V.3轻资产战略，防御优先"}],"files":["2026-05-25.md"]},{"id":53,"insight_type":"trend","content":"中海地产连续12年（2003-2014）兑现年净利润增长不低于20%的承诺，是中国房地产行业最长的持续增长纪录之一。但这一增长曲线的终结方式揭示了行业周期的不可抗力：2021年股东溢利达到401.6亿元的历史峰值，此后急剧下滑至2025年的130.1亿元（降幅68%）。即便是财务最保守、治理最规范的央企龙头，也无法在行业系统性下行中独善其身。值得注意的是，中海管理层的行业判断时间线高度精准：2010年预判'汰弱留强'、2018年判断行业进入'平稳发展期'、2021年提出'三大分化'、2022年宣告'上半场结束'——每一次判断都准确捕捉了行业拐点，但盈利仍不可避免地随行业大势下行，说明即使正确的战略认知也无法完全对冲系统性风险。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2010","from":"中海年报","text":"预判行业整合加速、汰弱留强"},{"date":"2018","from":"中海年报","text":"内地房地产从高速增长调整进入平稳发展期"},{"date":"2021","from":"中海年报","text":"股东溢利401.6亿元（历史峰值）"},{"date":"2022","from":"中海年报","text":"上半场已结束，百强销售降幅42.2%"},{"date":"2025","from":"中海年报","text":"核心溢利130.1亿元，较峰值降68%"}],"files":["2026-05-08.md","2026-05-11.md"]},{"id":54,"insight_type":"evolution","content":"恒隆地产三代掌门人的战略选择精确映射了中国房地产行业三个时代：创始人陈曾熙建立V.1模式（香港住宅开发），对应1960-1990年代香港地产黄金期；陈启宗建立V.2模式（内地高端商业租赁），对应2000-2020年中国城镇化与消费升级周期，高峰期上海恒隆广场租赁边际利润率达90%；陈文博推出V.3（轻资产、非高端、社区营造），则回应2024年后奢侈品在岸消费比例从82%骤降至60%、行业进入零和博弈的新现实。每一代战略转型都发生在上一代模式触及天花板之际，且新模式在定位上刻意与前代相反——陈启宗追求'最高端'，陈文博明确选择'非高端'定位下沉。这种代际间的战略钟摆效应，既是家族企业适应力的体现，也暗含新模式是否仍需漫长验证期的风险。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"历史","from":"恒隆资料","text":"陈曾熙从不接受记者访问，极度低调"},{"date":"2017","from":"恒隆年报","text":"上海恒隆广场租赁边际利润率90%"},{"date":"2024","from":"恒隆年报","text":"奢侈品在岸消费比例从82%骤降至60%"},{"date":"2025","from":"恒隆年报","text":"V.3新增资产多属非高端物业"}],"files":["2026-05-18.md","2026-05-25.md"]},{"id":55,"insight_type":"connection","content":"万科前高管毛大庆2014年在万科任上公开表示'金融化将是房企发展的必然倾向'，并推动万科物流地产对标普洛斯模式、引入黑石基金。这一判断本身具有前瞻性，但讽刺的是，万科内部同期正在发生的'金融化'走向了完全不同的方向——祝九胜打造的'影子万科'体系（鹏金所+博商系）将上市公司资金导给体外公司使用，本质上是一种失控的、非透明的金融化。毛大庆2015年离开万科创办优客工场，万科的金融化则以体外循环的形式隐秘发展，最终在2024-2025年以289亿元坏账准备的方式暴露。同一家公司、同一时期，对'金融化'的理解分裂为阳光路径（资产证券化/基金合作）与暗路径（体外资金循环），前者未能成为主流，后者却酿成灾难。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2014","from":"毛大庆讲话","text":"金融化将是房企发展必然倾向"},{"date":"2014","from":"毛大庆讲话","text":"万科物流地产对标普洛斯模式"},{"date":"2025","from":"秦朔文章","text":"祝九胜打造影子万科鹏金所+博商系"},{"date":"2025","from":"万科年报","text":"博商系坏账损失率89%"}],"files":["2026-05-17.md","2026-05-25.md","2026-05-11.md"]},{"id":56,"insight_type":"insight","content":"赵燕菁2022-2023年间的系列论述构成了一个完整的理论预警体系，其核心预判在万科和恒隆的实际数据中得到了分层验证。赵燕菁提出'房价如同生育率，压下来不容易，恢复增长更不容易'、'2023年很可能是避免债务危机的最后机会'，万科2024年即出现上市33年来首次亏损（450亿元），2025年扩大至886亿元，母公司可用资金仅11.89亿元。赵燕菁提出'房地产崩盘导致银行缩表→系统性需求萎缩'的传导链，恒隆2024年数据呈现了消费端的映射：奢侈品在岸消费比例从82%骤降至60%，但恒隆确认消费者总购买力并未下降，只是消费地点转移——这恰好印证了赵燕菁'资本品定价一旦破裂，流动性而非实际需求是问题核心'的论断。负财富效应改变的不是购买力，而是购买意愿和信心。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2022","from":"赵燕菁文章","text":"房价不可逆恢复，基于预期的资本定价一旦破裂"},{"date":"2023","from":"赵燕菁文章","text":"2023年很可能是避免债务危机最后机会"},{"date":"2025","from":"万科年报","text":"母公司可动用资金仅11.89亿元"},{"date":"2024","from":"恒隆年报","text":"在岸消费比例从82%骤降至60%"},{"date":"2024","from":"恒隆年报","text":"消费者总购买力未下降，消费地点转移"}],"files":["2026-05-24.md","2026-05-25.md"]},{"id":57,"insight_type":"lesson","content":"2008年金融危机中，普洛斯因母公司负债率58%被迫以13亿美元出售中国及日本资产给新加坡主权基金GIC，管理层在最低谷明确坚守中国内需逻辑，联合GIC成立SMG基金接管运营。此后普洛斯在梅志明领导下从物流仓储拓展至数据中心（2018年起）和新能源，全球资管规模达800亿美元，并成功在新加坡IPO（中金公司首次主导海外公司IPO）。与此形成对照的是，万科2014年试图对标普洛斯模式进入物流地产，引入黑石基金，但最终万科的'金融化'走向了体外资金循环的歧路。普洛斯危机中'被迫卖身'反而实现了从重资产向平台化资管的蜕变，万科主动'金融化'却酿成治理灾难——资本危机的结局取决于管理层在压力下选择透明化还是隐蔽化。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2008","from":"普洛斯报道","text":"母公司负债率58%被迫以13亿美元出售"},{"date":"2020","from":"梅志明履历","text":"普洛斯资管规模达800亿美元"},{"date":"2010","from":"中金公司报道","text":"GLP IPO系中金首次主导海外公司IPO"},{"date":"2014","from":"毛大庆讲话","text":"万科物流地产对标普洛斯"},{"date":"2025","from":"秦朔文章","text":"影子万科体系为治理失控产物"}],"files":["2026-05-17.md","2026-05-20.md","2026-05-25.md"]},{"id":58,"insight_type":"connection","content":"万科的人才外流路径揭示了一个隐性的行业人才生态图谱：毛大庆（万科高级副总裁、北京万科总经理）2015年离开创办优客工场；叶兴安1993-2002年在万科任职后辗转至绿景地产任执行董事；2010年外部报道确认万科高管向富力、合生等同行流入。而中海地产恰恰是反向的人才'虹吸者'——其费用率常年低于5%的运营效率被行业视为标杆，大量中海系管理人员流入其他房企。这一'万科出人、中海出方法论'的格局，与两家公司的最终命运形成了深刻呼应：万科以'成为主人'的合伙人文化留人，却催生了体外利益输送；中海以严格的费用管控和制度纪律治企，人才虽有流失但体系稳健依旧。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2015","from":"毛大庆履历","text":"万科前高级副总裁，离职创办优客工场"},{"date":"2002","from":"绿景地产年报","text":"叶兴安1993-2002年在万科任职"},{"date":"2010","from":"经济观察报","text":"万科、富力、合生均有中海高管流入"},{"date":"2025","from":"秦朔文章","text":"事业合伙人制度异化为治理失控"}],"files":["2026-05-25.md","2026-05-18.md","2026-05-17.md"]},{"id":59,"insight_type":"trend","content":"赵燕菁提出中国在高质量发展阶段'大量城市将破产'的预判，与中海地产2025年年报披露的一个政策信号形成呼应：2026年3月自然资源部出台政策，新增建设用地原则上不用于经营性房地产开发，这是供给端的历史性收缩。赵燕菁的理论框架认为，城市化完成后基础设施折旧维护成本将成为核心压力，'中国城市20-30年即快速老化，远逊于英国城市的冻龄能力'。黄奇帆的数据佐证了需求饱和：人均住房建筑面积已达41.76平方米、全国空置房约20%。三方信息叠加指向一个结论：中国房地产正从增量开发时代不可逆地转入存量管理时代，但现有的财税体系（依赖土地出让金）和城市治理模式（依赖基建投资拉动GDP）尚未完成适配转型，赵燕菁所警告的'城市鹤岗化'风险正在从理论预警变为现实威胁。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2023","from":"赵燕菁文章","text":"高质量阶段会有大量城市破产"},{"date":"2023","from":"赵燕菁文章","text":"地方政府为还债拼命卖地是竭泽而渔"},{"date":"2022","from":"黄奇帆文章","text":"人均住房41.76平方米，空置房约20%"},{"date":"2026","from":"中海年报","text":"新增建设用地原则上不用于经营性房地产"}],"files":["2026-05-24.md","2026-05-10.md","2026-05-11.md"]},{"id":60,"insight_type":"management","content":"中海地产在2007年报中首次披露成立风险管理委员会，同年新增土储1030万平米创历史纪录（较上年增58%），管理层明确识别出货币政策从'稳健'转'从紧'的风险信号，但土储扩张计划未见收缩——'措辞审慎、行动激进'。仅一年后2008年金融危机爆发，中海净负债率从30%升至46.8%。然而中海的'行动与认知背离'与万科形成鲜明对比：中海在2009年立即将净负债率从46.8%压降至22.4%，获穆迪上调评级，并在此后十余年始终维持行业最低融资成本；万科郁亮2021年年报承认'未能坚决摆脱高增长惯性'，但到2024年才被迫面对后果。中海的纠错速度以季度计，万科的纠错延迟以年计，这一时间差最终决定了两家公司截然不同的生存状态。","created_at":"2026-05-26 23:37:16","excerpts":[{"date":"2007","from":"中海年报","text":"首次披露成立风险管理委员会"},{"date":"2007","from":"中海年报","text":"新增土储1030万平米，扩张加速"},{"date":"2009","from":"中海年报","text":"净负债率从46.8%压降至22.4%"},{"date":"2021","from":"万科年报","text":"郁亮承认未能摆脱高增长惯性"},{"date":"2025","from":"万科年报","text":"母公司可用资金仅11.89亿元"}],"files":["2026-05-08.md","2026-05-25.md"]},{"id":44,"insight_type":"connection","content":"单伟建和黄奇帆在改革方法论上形成了高度互补的「渐进主义」共识。单伟建认为「中国许多制度和治理模式，并不是事先设计好的蓝图」，而是「在应对和解决具体危机与问题的过程中逐步建立和完善起来的」，呼应邓小平「摸着石头过河」。黄奇帆则从操作层面将这一理念具体化为重组方法论：改革本质上就是「体制、机制、制度的重组」，核心是资源优化配置，最高境界是「随心所欲不逾矩」——在政策、法律、资源约束框架内寻找最优解。两人从不同角度（单伟建从制度演化史观、黄奇帆从实操方法论）共同论证了中国改革的实用主义特征。","created_at":"2026-05-21 07:35:41","excerpts":[{"date":"2026-04-14","from":"单伟建","text":"中国许多制度和治理模式，并不是事先设计好的蓝图，就像邓小平讲的「摸着石头过河」，是在应对和解决具体危机与问题的过程中逐步建立和完善起来的"},{"date":"2026-05-18","from":"黄奇帆","text":"改革是体制、机制、制度的重组，重组是资源配置方式的改革，改革与重组异曲同工"},{"date":"2026-05-18","from":"黄奇帆","text":"重组的最高境界就是……随心所欲不逾矩"}],"files":["2026-04-14.md","2026-05-18.md"]},{"id":45,"insight_type":"connection","content":"两人对高杠杆风险的警惕形成跨领域呼应。单伟建从国际投资角度警告中国海外资产面临地缘政治风险——香港和大陆净头寸合计至少5.5万亿美元，作为「世界上最大的净债权国」存在「巨大的风险」。黄奇帆则从国内重组实践出发警告高杠杆操作的危险：「以高杠杆、高负债去重组……甚至会陷入意料不到的债务危机」，并以2000年美国次级债重组引发2008年次债危机、进而导致2010年政府债务危机的案例作为反面教材。两人从不同维度（对外资产风险vs对内杠杆风险）共同指向同一个核心命题：过度扩张的资产负债表是系统性风险的根源。","created_at":"2026-05-21 07:35:41","excerpts":[{"date":"2026-04-14","from":"单伟建","text":"把香港和大陆的净头寸加起来……就至少有5.5万亿美元，那我们就是世界上最大的净债权国。这在当前的地缘政治格局下，我认为还是存在巨大的风险"},{"date":"2026-05-18","from":"黄奇帆","text":"若拿出全部老本，甚至以高杠杆、高负债去重组……甚至会陷入意料不到的债务危机"},{"date":"2026-05-18","from":"黄奇帆","text":"2000年美国为解决房地产不景气问题，把房地产中的问题贷款重组成次级债，引发了2008年的次债危机"}],"files":["2026-04-14.md","2026-05-18.md"]},{"id":47,"insight_type":"comparison","content":"单伟建与黄奇帆在「政府角色」问题上呈现微妙的视角差异。单伟建强调中国是「全球主要大国中唯一政府部门净资产为正的国家」，以此论证中国财政实力和制度优势，对5%的GDP增长目标「一定能达到」充满信心。黄奇帆则从实操经验强调政府在重组中应保持审慎：「重组是管理层的事情，不能搞民粹主义」，必须「量力而行、适可而止」，在「阳光下作业」。在房地产问题上，黄奇帆进一步指出仅靠融资端放松「不能代替市场主体造血机制的恢复」，需要土地和财税部门「主动发力」。单伟建偏向于对政府能力的乐观信任，黄奇帆则强调政府行动的边界感和执行纪律。","created_at":"2026-05-21 07:35:41","excerpts":[{"date":"2026-04-14","from":"单伟建","text":"2025年中国GDP增长5%……这在任何一个国家，都是一个很可观的数字"},{"date":"2026-05-18","from":"黄奇帆","text":"重组是管理层的事情、不能搞「民粹主义」，要讲时机、讲机遇，重组应该是多赢的，必��在阳光下作业，要量力而行、适可而止"},{"date":"2026-05-10","from":"财新","text":"融资端放松不能代替市场主体造血机制的恢复"}],"files":["2026-04-14.md","2026-05-18.md","2026-05-10.md"]},{"id":48,"insight_type":"connection","content":"单伟建的投资策略与黄奇帆对房地产危机的分析形成了有趣的「用脚投票」印证。单伟建明确表示「不投制造业，因为太卷，利润率过低；也不投出口企业」，而是「投针对消费的头部企业」。黄奇帆分析的房地产危机恰好解释了为什么制造业和出口之外的增长路径如此重要——房地产及其上下游40多个行业面临系统性风险，传统的投资驱动模式（大量依赖房地产和基建）已不可持续。单伟建作为管理亚洲最大PE基金之一的投资人，其资产配置选择实际上是对黄奇帆所描述的结构性转型的市场化验证。","created_at":"2026-05-21 07:35:41","excerpts":[{"date":"2026-04-14","from":"单伟建","text":"在投资上，我不投制造业，因为太「卷」，利润率过低；也不投出口企业……我投的是针对消费的头部企业"},{"date":"2026-05-10","from":"财新","text":"房地产行业急转直下：一方面楼市销售增速继续降至历史低点，另一方面融资端遭遇突然收紧"},{"date":"2026-05-10","from":"财新","text":"房地产业风险正在向产业链上下游40多个行业蔓延"}],"files":["2026-04-14.md","2026-05-10.md"]},{"id":35,"insight_type":"prediction","content":"万科2021年年报中，郁亮明确承诺'2022年将实现营业收入和净利润企稳回升'，然而2022年净利润实际仅增长0.4%（几乎持平），同期百强房企销售额暴跌42%，行业陷入有统计数据以来最大跌幅的危机。这一承诺的落空，揭示出管理层在2021年底对市场形势的严重误判，而彼时万科存货跌价准备余额仅51.4亿元，尚属可控，管理层的乐观预期并非毫无依据，但恰恰错判了2022年政策紧缩叠加信心崩塌的非线性冲击。","created_at":"2026-05-19 23:34:28","excerpts":[{"date":"2021","from":"万科年报·郁亮","text":"2022年将实现营业收入和净利润企稳回升"},{"date":"2022","from":"万科年报","text":"百强房企销售额同比下降42%，净利润同比增长0.4%"},{"date":"2022","from":"万科存货数据","text":"新增存货跌价准备4.5亿元，余额51.4亿元"}],"files":["2026-04-17.md","2026-04-14.md"]},{"id":36,"insight_type":"trend","content":"万科存货跌价准备从2022年到2025年呈现急剧加速恶化的趋势：新增计提金额分别为4.5亿元（2022年）、34.9亿元（2023年）、70.6亿元（2024年）、208.3亿元（2025年），四年累计跌价准备余额从51.4亿元膨胀至266.4亿元，增幅超过5倍。这一轨迹表明房地产市场的价格下行并非线性，而是在政策托底效果有限的背景下持续深化，万科资产质量的实质性恶化远超2022年管理层的预判。","created_at":"2026-05-19 23:34:28","excerpts":[{"date":"2022","from":"万科存货数据","text":"新增跌价准备4.5亿元，余额51.4亿元"},{"date":"2023","from":"万科存货数据","text":"新增跌价准备34.9亿元，余额79.9亿元"},{"date":"2024","from":"万科存货数据","text":"新增跌价准备70.6亿元，余额115.7亿元"},{"date":"2025","from":"万科存货数据","text":"新增跌价准备208.3亿元，余额266.4亿元"}],"files":["2026-04-14.md"]},{"id":38,"insight_type":"inconsistency","content":"王石在2009年成为全球最大住宅公司之际，主动发出警示：'住宅市场是经济发展缩影，规模扩张不值得如痴如醉'。然而万科此后并未收手——2013年致股东信以'全世界最大的房地产开发企业'为荣，并以此为背书强调坚守主业的正确性。直至2021年，郁亮才在利润暴跌45.7%后坦承'未能摆脱高增长惯性'、'土地投资追高冒进'。王石的预警与公司实际路径之间横跨十余年的落差，是一个典型的内部警示被组织惯性淹没的案例。","created_at":"2026-05-19 23:34:28","excerpts":[{"date":"2009","from":"万科年报·王石","text":"规模扩张不值得如痴如醉，真实需求才是本原动力"},{"date":"2013","from":"万科年报","text":"万科已成为全世界最大的房地产开发企业"},{"date":"2021","from":"万科年报·郁亮","text":"净利润下降源于投资追高冒进，未能摆脱高增长惯性"}],"files":["2026-04-17.md"]},{"id":39,"insight_type":"evolution","content":"雅戈尔的多品牌战略经历了从雄心勃勃到承认失败的完整弧线：2022年构建六品牌矩阵并投入20亿建设时尚体验馆，2021年李如成已坦承'多品牌战略执行失败——品牌沦为品类，此消彼长无增长'，并对多元化经营的可持续性提出根本质疑。2023年业绩不及预期，同年首次公开提出创业团队传承迫在眉睫。2024年彻底退出经营三十多年的地产业务，全力转向时尚产业，但引进品牌尚未产生效益。这一演变呈现出典型的'战略认知滞后于战略行动'的创始人企业路径依赖。","created_at":"2026-05-19 23:34:28","excerpts":[{"date":"2021","from":"雅戈尔年报·李如成","text":"多品牌战略失败——品牌沦为品类，此消彼长无增长"},{"date":"2022","from":"雅戈尔年报·李如成","text":"投入20亿建时尚体验馆，开始收缩房产开发投入"},{"date":"2023","from":"雅戈尔年报·李如成","text":"创业团队传承问题迫在眉睫，新老更替纳入制度性工作"},{"date":"2024","from":"雅戈尔年报·李如成","text":"退出运营三十多年的地产行业，引进品牌尚未产生效益"}],"files":["2026-04-16.md","2026-04-09.md"]},{"id":40,"insight_type":"connection","content":"万科与雅戈尔在地产与主业之间的战略取舍形成鲜明对照：雅戈尔作为以服装为主业的多元化企业，在感知到地产风险后于2022年启动收缩、2024年彻底清退，成功实现业务切割；万科作为专业房企，在2022年宣告住宅开发主导模式'不可逆转地终结'后，却因深度绑定而无法退出，只能以'开发、经营、服务并重'作为渐进转型路径，存货持续减值、现金压力持续累积。多元化企业在地产危机中反而拥有更灵活的退出能力，而专业化企业则被锁定其中——这对'专注主业必然优于多元化'的经典论断构成反例。","created_at":"2026-05-19 23:34:28","excerpts":[{"date":"2022","from":"万科年报","text":"未来行业无法再回到对住宅开发过于依赖的往日时光"},{"date":"2022","from":"雅戈尔年报·李如成","text":"及时收缩房产开发投入，严防房地产风险"},{"date":"2024","from":"雅戈尔年报·李如成","text":"2024年退出运营三十多年的地产行业，全力投入时尚产业"}],"files":["2026-04-17.md","2026-04-16.md","2026-04-09.md"]},{"id":28,"insight_type":"prediction","content":"郁亮在2021年年报中承诺'2022年将实现营业收入和净利润企稳回升'，但该预测未能兑现——2022年净利润仅微增0.4%，此后持续恶化。更早在2013年，万科致股东信对'傲慢与盲动'的双重警示，与后续公司因投资追高冒进而陷入危机形成历史性反讽。这两处预测均指向管理层对行业周期判断的系统性偏差。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2021","from":"万科致股东信","text":"2022年将实现营业收入和净利润企稳回升（后续数据证明未能兑现）"},{"date":"2013","from":"万科致股东信","text":"因以往成功滋生的傲慢危险，但反应过度的盲动同样危险"},{"date":"2021","from":"万科致股东信","text":"净利润下降主要源于投资追高冒进，管理层承认未能摆脱高增长惯性"}],"files":["2026-04-17.md"]},{"id":29,"insight_type":"trend","content":"万科存货跌价准备呈现加速恶化态势：2022年新增计提仅4.5亿元，2023年跃升至34.9亿元，2024年扩大至70.6亿元，2025年暴增至208.3亿元——四年间新增计提规模增长约46倍。累计跌价准备从2022年的51.4亿元增至2025年的266.4亿元。这一加速曲线揭示房地产下行对万科资产质量的冲击远未触底，尤其2025年单年计提已超过此前三年总和，资产减值压力正在加剧。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2022","from":"万科存货数据","text":"新增存货跌价准备4.5亿元，累计余额51.4亿元"},{"date":"2023","from":"万科存货数据","text":"新增计提跌价准备34.9亿元，累计余额79.9亿元"},{"date":"2024","from":"万科存货数据","text":"新增计提存货跌价准备70.6亿元，累计余额115.7亿元"},{"date":"2025","from":"万科存货数据","text":"新增计提跌价准备208.3亿元，累计跌价准备余额266.4亿元"}],"files":["2026-04-14.md"]},{"id":30,"insight_type":"trend","content":"万科存货规模自2022年起连续大幅收缩：2022年末9070.6亿元，2023年末7017亿元（降22.6%），2024年末5190.1亿元（降26%），2025年末3737.4亿元（降28%），三年间总规模缩水约59%。与此同时，已完工现房占比从2022年的10.8%升至2025年的30.6%，去化压力持续积聚。对比2001年土地储备980万平方米时的积极扩张期，万科的收缩幅度印证了行业格局的历史性逆转。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2022","from":"万科存货数据","text":"存货9070.6亿元，已完工现房占比10.8%"},{"date":"2023","from":"万科存货数据","text":"存货7017亿元，同比下降22.6%"},{"date":"2025","from":"万科存货数据","text":"存货3737.4亿元，已完工现房占比30.6%，同比下降28%"}],"files":["2026-04-14.md"]},{"id":31,"insight_type":"connection","content":"万科与雅戈尔在'专业化vs多元化'的战略选择上走出了截然不同却又相互呼应的路径：万科2001年将万佳百货股权转让给华润退出零售业，完成专业化转型，全力押注房地产；雅戈尔则在2024年退出运营了三十多年的地产行业，转向时尚产业。两家公司相隔约二十年先后完成了向对方曾放弃领域的相向而行——万科当年退出零售聚焦地产，而雅戈尔今日退出地产聚焦消费品牌。这一历史对照揭示了企业战略专业化选择与行业周期之间的深层张力。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2001","from":"万科年报","text":"将万佳百货72%股份转让给中国华润总公司，正式成为专一的房地产公司"},{"date":"2024","from":"雅戈尔致股东信","text":"2024年退出运营三十多年的地产行业，全力投入时尚产业"}],"files":["2026-04-10.md","2026-04-09.md"]},{"id":32,"insight_type":"inconsistency","content":"雅戈尔2021年报中李如成坦承多品牌战略执行失败——'品牌沦为品类，此消彼长无增长'，并对多元化经营的可持续性提出根本性质疑；然而仅隔一年，2022年公司不仅未收缩品牌，反而将品牌矩阵从既有格局扩展至六个品牌（雅戈尔、MAYOR、HSM、HANP、UND、HH），并投资20亿元建设时尚体验馆。承认失败后仍加码同类策略，反映雅戈尔在战略执行层面存在认知与行动的内在矛盾。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2021","from":"雅戈尔致股东信","text":"多品牌战略执行失败——品牌沦为品类，此消彼长无增长"},{"date":"2022","from":"雅戈尔致股东信","text":"构建多层次品牌矩阵：MAYOR、HSM、HANP、UND、HH六品牌，投资20亿建时尚体验馆"}],"files":["2026-04-16.md"]},{"id":33,"insight_type":"evolution","content":"万科用二十年完成了从'专业化'到'被迫多元化'的完整历史循环：2001年出售万佳百货完成专业化转型，2003年进入全国化高速扩张期，2013年旗帜鲜明地反对多元化并视城镇化为长期红利，2021年因开发业务净利润暴跌45.7%而启动四大业务转型，2022年宣布住宅开发主导模式'不可逆转地终结'。这一演变轨迹表明，万科的战略转向并非主动选择，而是被行业拐点倒逼的结果，与2013年信中所强调的'坚守主业'形成根本性断裂。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2001","from":"万科年报","text":"转让万佳股权退出零售业，专业化战略调整顺利完成"},{"date":"2013","from":"万科致股东信","text":"专业化是万科成立以来一直追求的方向，坚守房地产主业"},{"date":"2021","from":"万科致股东信","text":"净利润同比-45.7%，确定四大转型方向"},{"date":"2022","from":"万科致股东信","text":"未来行业无法再回到对住宅开发过于依赖的往日时光"}],"files":["2026-04-17.md","2026-04-15.md","2026-04-10.md","2026-04-09.md"]},{"id":34,"insight_type":"evolution","content":"雅戈尔在2021-2024年间完成了一次有序但痛苦的战略收缩：2021年反思多元化失败并提出'有所取舍'，2022年收缩房产开发投入防范风险，2023年业绩不及预期且创始人公开表示传承问题迫在眉睫，2024年彻底退出地产行业但新引进品牌尚未产生效益。整个过程呈现'旧业务已退出、新业务未盈利'的战略真空期，且管理层传承尚未完成，公司面临方向转型与代际交替的双重压力叠加。","created_at":"2026-05-19 23:28:31","excerpts":[{"date":"2021","from":"雅戈尔致股东信","text":"提出多产业经营需'有所取舍'，预示后续战略收缩"},{"date":"2022","from":"雅戈尔致股东信","text":"及时收缩房产开发投入，严防房地产风险"},{"date":"2023","from":"雅戈尔致股东信","text":"创业团队传承问题迫在眉睫，新老更替纳入制度性工作"},{"date":"2024","from":"雅戈尔致股东信","text":"退出运营三十多年的地产行业，引进品牌尚未产生效益"}],"files":["2026-04-16.md","2026-04-09.md"]},{"id":20,"insight_type":"trend","content":"万科存货跌价准备呈指数级恶化：2022年新增计提4.5亿元，2023年激增至34.9亿元，2024年翻倍至70.6亿元，2025年更飙升至208.3亿元，四年间单年计提规模扩大46倍。累计跌价准备余额从51.4亿元攀升至266.4亿元，占存货比例从0.57%升至7.1%。这一加速恶化的趋势表明，房地产市场下行对万科资产价值的冲击远未见底，且每一年的减值幅度都超出前一年的预期。","created_at":"2026-05-19 23:12:04","excerpts":[{"date":"2022","from":"万科年报","text":"新增存货跌价准备4.5亿元"},{"date":"2023","from":"万科年报","text":"新增计提存货跌价准备34.9亿元"},{"date":"2024","from":"万科年报","text":"新增计提存货跌价准备70.6亿元"},{"date":"2025","from":"万科年报","text":"新增计提存货跌价准备208.3亿元"}],"files":["2026-04-14.md"]},{"id":21,"insight_type":"prediction","content":"郁亮在万科2021年报中明确承诺'2022年将实现营业收入和净利润企稳回升'，但后续事实证明这一预测未能兑现。2021年净利润已同比下降45.7%，而此后万科存货持续大幅缩减（从9070亿降至3737亿），跌价准备累计达266亿元，经营状况持续恶化而非企稳。管理层对市场底部的判断再次过于乐观，与其自我批评的'市场判断过于乐观'形成讽刺性的自我印证。","created_at":"2026-05-19 23:12:04","excerpts":[{"date":"2021","from":"万科年报","text":"2022年将实现营收和净利润企稳回升"},{"date":"2021","from":"万科年报","text":"市场判断过于乐观"},{"date":"2022","from":"万科年报","text":"百强房企销售额同比下降42%"}],"files":["2026-04-17.md","2026-04-14.md"]},{"id":24,"insight_type":"inconsistency","content":"万科管理层在2021和2022年连续两年致股东信中承认'投资追高冒进'和'操盘离散度过大'，声称'正在逐步解决'，但后续三年存货跌价准备从51亿元暴增至266亿元，表明这些问题的后果远未消化完毕。管理层的措辞从2021年的'承认错误、承诺企稳'转变为2022年的'赚小钱、长钱、辛苦钱'，语气明显更为悲观和保守，但实际资产减值的加速度远超措辞调整的幅度。","created_at":"2026-05-19 23:12:04","excerpts":[{"date":"2021","from":"万科年报","text":"土地投资追高冒进、市场判断过于乐观"},{"date":"2022","from":"万科年报","text":"投资追高冒进问题正在逐步解决"},{"date":"2022","from":"万科年报","text":"赚小钱、长钱、辛苦钱"},{"date":"2025","from":"万科年报","text":"新增计提存货跌价准备208.3亿元"}],"files":["2026-04-17.md","2026-04-14.md"]},{"id":25,"insight_type":"evolution","content":"雅戈尔李如成的战略反思呈现清晰的递进轨迹：2021年坦承多品牌战略失败（'品牌沦为品类，此消彼长无增长'），2022年重新确立世界级时尚集团目标并开始收缩地产，2023年首次公开面对创业团队传承问题，2024年彻底退出地产。这一四年演进显示李如成在75岁前后（创业45周年）完成了从多元化扩张到聚焦收缩的认知转变，但'引进品牌尚未产生效益'意味着这场转型的成败仍悬而未决。","created_at":"2026-05-19 23:12:04","excerpts":[{"date":"2021","from":"雅戈尔年报","text":"多品牌实质上未带来增长"},{"date":"2022","from":"雅戈尔年报","text":"建设世界级时尚集团为主要目标"},{"date":"2023","from":"雅戈尔年报","text":"创业团队传承问题迫在眉睫"},{"date":"2024","from":"雅戈尔年报","text":"退出地产，引进品牌尚未产生效益"}],"files":["2026-04-16.md","2026-04-09.md"]},{"id":26,"insight_type":"prediction","content":"万科2003年王石预判'土地招拍挂和银行禁止土地贷款将利好品牌企业'，这在短期内确实得到验证——万科随后实现了近二十年的高速增长。然而从更长周期看，正是这种品牌优势带来的扩张信心，最终导致了郁亮2021年承认的'高增长惯性'和'投资追高冒进'。王石时代建立的竞争优势逻辑，在郁亮时代演变为战略陷阱。","created_at":"2026-05-19 23:12:04","excerpts":[{"date":"2003","from":"万科年报","text":"土地招拍挂将利好有实力的品牌企业"},{"date":"2021","from":"万科年报","text":"未能摆脱高增长惯性"},{"date":"2021","from":"万科年报","text":"土地投资追高冒进"}],"files":["2026-04-15.md","2026-04-17.md"]},{"id":14,"insight_type":"trend","content":"万科存货跌价准备呈指数级恶化：2022年新增计提4.5亿元，2023年升至34.9亿元，2024年翻倍至70.6亿元，2025年猛增至208.3亿元——四年间新增计提规模扩大了46倍。累计跌价准备余额从51.4亿元飙升至266.4亿元，反映房地产市场下行对万科资产价值的冲击在加速而非趋缓。这与2003年王石所描述的'高速增长期'形成鲜明的历史反转。","created_at":"2026-05-19 23:06:00","excerpts":[{"date":"2003","from":"万科年报","text":"房地产业务进入高速增长期，增速均约40%"},{"date":"2022","from":"万科年报","text":"新增存货跌价准备4.5亿元"},{"date":"2023","from":"万科年报","text":"新增计提存货跌价准备34.9亿元"},{"date":"2024","from":"万科年报","text":"新增计提存货跌价准备70.6亿元"},{"date":"2025","from":"万科年报","text":"新增计提存货跌价准备208.3亿元"}],"files":["2026-04-15.md","2026-04-14.md"]},{"id":18,"insight_type":"prediction","content":"万科2003年王石预判'土地招拍挂和银行禁止土地贷款将利好有实力的品牌企业'，且'大量新资金和区域开发商全国化导致竞争更趋激烈'。前半部分在中短期内得到验证——万科确实在2001-2003年的规范化浪潮中获益，全国化扩张成功。但从20年维度看，这一判断存在盲区：品牌企业的规模优势在行业系统性下行时无法提供保护，万科2025年仍需面对208亿元的巨额减值。","created_at":"2026-05-19 23:06:00","excerpts":[{"date":"2003","from":"万科年报","text":"土地招拍挂将利好有实力的品牌企业"},{"date":"2002","from":"万科年报","text":"政府加强监管将利好品牌领先企业"},{"date":"2025","from":"万科年报","text":"新增计提跌价准备208.3亿元"}],"files":["2026-04-15.md","2026-04-09.md","2026-04-14.md"]},{"id":19,"insight_type":"connection","content":"万科2001年转让万佳百货完成专业化转型，被视为战略聚焦的成功典范——此后扣非净利润增长104%，全国化扩张顺利推进。而雅戈尔2021年反思多元化、2024年退出地产聚焦时尚，本质上也是专业化收缩。两家公司在不同时代做出相似的战略选择，但万科的专业化聚焦房地产在行业上升期是正确答案，在下行期却成为枷锁；雅戈尔的专业化聚焦时尚能否成功，同样取决于行业周期，而李如成自己也承认'大环境对时尚经济带来挑战'。","created_at":"2026-05-19 23:06:00","excerpts":[{"date":"2001","from":"万科年报","text":"转让万佳股权退出零售业，专业化调整完成"},{"date":"2002","from":"万科年报","text":"专业化调整后扣非净利润增长104%"},{"date":"2021","from":"雅戈尔年报","text":"多产业经营需有所取舍"},{"date":"2024","from":"雅戈尔年报","text":"大环境对时尚经济带来挑战"}],"files":["2026-04-09.md","2026-04-16.md"]},{"id":9,"insight_type":"trend","content":"万科存货从2022年的9070.6亿元持续下降至2025年的3737.4亿元，四年间缩减近60%，但更值得关注的是存货跌价准备的加速恶化：2022年新增计提仅4.5亿元，2023年升至34.9亿元，2024年跃升至70.6亿元，2025年更是飙升至208.3亿元。跌价准备余额占存货比例从2022年的0.57%急剧攀升至2025年的7.1%，表明资产质量恶化速度远超去库存速度，市场下行对存量资产的冲击正在加速而非收敛。","created_at":"2026-05-19 22:42:03","excerpts":[{"date":"2022","from":"万科年报","text":"新增计提存货跌价准备4.5亿元"},{"date":"2023","from":"万科年报","text":"新增计提存货跌价准备34.9亿元"},{"date":"2024","from":"万科年报","text":"新增存货跌价准备70.6亿元"},{"date":"2025","from":"万科年报","text":"新增存货跌价准备208.3亿元"}],"files":["2026-04-14.md"]},{"id":10,"insight_type":"evolution","content":"万科的历史轨迹呈现出一个完整的扩张-收缩周期。2001年王石在年报中积极推进全国化扩张，新进入四个城市，土地储备达980万平方米，预判'地产行业仍将保持向上势头'；2002年进一步向珠三角和长三角区域集约化发展，扣非净利润增长104%。然而二十余年后，万科存货从2022年的9070亿元骤降至2025年的3737亿元，累计跌价准备266.4亿元，从曾经的激进扩张者变为被迫大幅收缩的防守者。这一历史性反转揭示了房地产行业长周期的残酷性——当年支撑高速增长的土地储备逻辑，在下行周期中恰恰成为最大的风险敞口。","created_at":"2026-05-19 22:42:03","excerpts":[{"date":"2001","from":"万科年报-王石","text":"土地储备达980万平方米"},{"date":"2002","from":"万科年报-王石","text":"扣非净利润同比增长104%"},{"date":"2023","from":"万科年报","text":"从扩张期进入收缩调整期"},{"date":"2025","from":"万科年报","text":"新增存货跌价准备208.3亿元"}],"files":["2026-04-14.md","2026-04-09.md"]},{"id":11,"insight_type":"trend","content":"万科已完工现房占存货比例的变化揭示了去化困境的加深：2022年已完工现房占比仅10.8%（980.7亿元），2023年为15.4%（1077.4亿元），2024年升至23.9%（1239.1亿元），2025年进一步攀升至30.6%（1144.5亿元）。尽管绝对金额在2025年有所下降，但占比持续走高，说明在建项目竣工后无法顺利销售，大量转化为现房库存，去化速度跟不上竣工速度，形成'堰塞湖'效应。","created_at":"2026-05-19 22:42:03","excerpts":[{"date":"2022","from":"万科年报","text":"已完工现房980.7亿元占比10.8%"},{"date":"2024","from":"万科年报","text":"已完工现房1239.1亿元占比23.9%"},{"date":"2025","from":"万科年报","text":"已完工现房1144.5亿元占比30.6%"}],"files":["2026-04-14.md"]},{"id":12,"insight_type":"connection","content":"雅戈尔2024年退出运营三十多年的地产业务，与万科同期面临的巨额存货减值形成行业性共振。万科2024-2025年新增计提跌价准备分别为70.6亿和208.3亿元，连行业龙头都面临如此严峻的资产减值压力，非地产主业的雅戈尔选择彻底退出房地产、转向时尚产业，某种程度上是对行业前景的'用脚投票'。两家公司的不同选择——万科被动承受减值、雅戈尔主动止损退出——反映了房地产下行周期中企业根据自身禀赋做出的差异化应对策略。","created_at":"2026-05-19 22:42:03","excerpts":[{"date":"2024","from":"雅戈尔年报-李如成","text":"退出运营三十多年的地产行业"},{"date":"2024","from":"万科年报","text":"新增计提存货跌价准备70.6亿元"},{"date":"2025","from":"万科年报","text":"新增存货跌价准备208.3亿元"}],"files":["2026-04-14.md","2026-04-09.md"]},{"id":13,"insight_type":"prediction","content":"王石在2001年年报中预判'2002年地产行业仍将保持向上势头'，2002年万科确实实现了扣非净利润104%的增长，短期预测得到验证。但王石同期提出的'区域集约化发展'和'品牌领先企业将受益于政府加强监管'的判断，在二十余年后的行业下行期面临严峻考验——即便万科已是行业最具品牌影响力的企业之一，2025年仍不得不计提208.3亿元跌价准备，说明品牌优势在系统性行业风险面前的防御力有限。","created_at":"2026-05-19 22:42:03","excerpts":[{"date":"2001","from":"万科年报-王石","text":"地产行业仍将保持向上势头"},{"date":"2002","from":"万科年报-王石","text":"政府加强监管将利好品牌领先企业"},{"date":"2025","from":"万科年报","text":"新增存货跌价准备208.3亿元"}],"files":["2026-04-14.md","2026-04-09.md"]},{"id":5,"insight_type":"evolution","content":"万科从2001年专业化转型全面聚焦房地产，到2022年存货跌价准备累计51.4亿元、存货同比下降15.7%，呈现出完整的行业周期弧线。2001-2002年万科营收从44.55亿元增至45.7亿元，扣非净利润同比增长104%，王石在年报中判断'地产行业仍将保持向上势头'。二十年后的2022年，万科存货从上年大幅缩减15.7%，新增计提跌价准备4.5亿元，已完工现房980.7亿元面临去化压力，行业从上升期进入深度调整期。这一对比揭示了中国房地产行业从黄金时代到下行周期的完整演变。","created_at":"2026-05-19 22:37:40","excerpts":[{"date":"2022","from":"万科年报","text":"存货同比下降15.7%，跌价准备余额51.4亿元"},{"date":"2001","from":"万科年报","text":"营收增长17.74%，净利润增长25.99%"},{"date":"2002","from":"万科年报","text":"扣非净利润同比增长104%"},{"date":"2001","from":"万科年报（王石）","text":"2002年地产行业仍将保持向上势头"}],"files":["2026-04-14.md","2026-04-10.md","2026-04-09.md"]},{"id":7,"insight_type":"trend","content":"万科2001年总资产仅64.38亿元，待开发占地面积980万平方米；到2022年，仅存货一项即达9070.6亿元，规模膨胀超过140倍。然而2001年万科净利润增速达25.99%、扣非净利润增长104%，处于高质量扩张期；2022年却需计提51.4亿元存货跌价准备，存货规模主动收缩15.7%。规模的急剧膨胀与后期的被迫收缩，反映出房地产行业高杠杆扩张模式的内在脆弱性。","created_at":"2026-05-19 22:37:40","excerpts":[{"date":"2001","from":"万科年报","text":"总资产64.38亿元"},{"date":"2002","from":"万科年报","text":"结算面积同比增长62.3%"},{"date":"2022","from":"万科年报","text":"存货9070.6亿元，同比下降15.7%"}],"files":["2026-04-10.md","2026-04-09.md","2026-04-14.md"]},{"id":8,"insight_type":"prediction","content":"王石在万科2002年年报中预判'土地出让方式变化将利好品牌领先企业'、'集约化调整成为行业趋势'，这一判断在短期内得到验证——万科此后确实凭借品牌和管理优势快速扩张。但从2022年数据看，即便是行业龙头万科也面临存货跌价、去化压力，品牌领先并未能完全抵御行业系统性下行风险，早期的乐观预判需要加入周期维度的修正。","created_at":"2026-05-19 22:37:40","excerpts":[{"date":"2002","from":"万科年报（王石）","text":"政府加强监管将利好品牌领先企业"},{"date":"2022","from":"万科年报","text":"已完工现房980.7亿元，存在去化压力"}],"files":["2026-04-09.md","2026-04-14.md"]},{"id":1,"insight_type":"connection","content":"万科与雅戈尔在房地产行业上形成了完美的镜像轨迹：2001年万科转让万佳百货股权退出零售业，全面聚焦房地产，开启了长达二十余年的地产黄金时代；而雅戈尔在2024年退出运营三十多年的地产行业，全力投入时尚产业。两家公司在不同时间节点做出了方向相反的战略选择——万科在行业上升期全力进入，雅戈尔在行业下行期果断退出。这反映了中国房地产行业从朝阳产业到深度调整的完整周期。","created_at":"2026-05-19 22:32:47","excerpts":[{"date":"2001","from":"万科年报","text":"转让万佳股权退出零售业，专业化战略调整顺利完成"},{"date":"2001","from":"万科年报","text":"2002年地产行业仍将保持向上势头"},{"date":"2024","from":"雅戈尔年报","text":"退出运营三十多年的地产行业，全力投入时尚产业"}],"files":["2026-04-10.md","2026-04-09.md"]},{"id":2,"insight_type":"evolution","content":"万科2001-2002年的全国化扩张战略经历了清晰的演进：2001年王石提出积极扩张，一年内新进入武汉、南京、长春、南昌四个城市，土地储备达980万平方米；但到2002年，战略方向已从单城市扩张转向珠三角和长三角的区域集约化发展，待开发项目资源反而缩减至706万平方米。这表明万科在快速扩张后迅速意识到摊子铺太大的风险，从追求城市数量转向追求区域深耕质量，体现了早期万科务实的战略纠偏能力。","created_at":"2026-05-19 22:32:47","excerpts":[{"date":"2001","from":"万科年报","text":"成功进入武汉、南京、长春、南昌四个新城市"},{"date":"2001","from":"万科年报","text":"待开发占地面积980万平方米"},{"date":"2002","from":"万科年报","text":"战略方向转向区域集约化发展模式"},{"date":"2002","from":"万科年报","text":"待开发项目资源706万平方米"}],"files":["2026-04-09.md"]},{"id":3,"insight_type":"prediction","content":"王石在2001年年报中预测'2002年地产行业仍将保持向上势头，集约化调整成为行业趋势'，2002年实际业绩验证了这一判断：万科结算面积同比增长62.3%，结算净利润增长68.5%，扣非净利润增长104%。同时战略上确实转向区域集约化，与预判完全一致。但值得注意的是，营收仅增长2.7%、净利润仅增长2.3%，这与结算指标的大幅增长存在时间差，说明高增长主要来自前期项目集中交付，而非当年新增销售的即时贡献。","created_at":"2026-05-19 22:32:47","excerpts":[{"date":"2001","from":"万科年报","text":"2002年地产行业仍将保持向上势头"},{"date":"2002","from":"万科年报","text":"扣非净利润同比增长104%"},{"date":"2002","from":"万科年报","text":"营收同比增长2.7%，净利润同比增长2.3%"}],"files":["2026-04-09.md"]},{"id":4,"insight_type":"connection","content":"万科2001年专业化转型的核心交易——将万佳百货72%股权转让给中国华润总公司——揭示了万科与华润之间远非简单的股东关系。华润既是万科第一大股东（合计持股约15.08%），又是万科剥离资产的接盘方。这种'大股东接盘非核心资产'的安排，使万科得以顺利完成专业化转型，同时也加深了双方的利益绑定。华润通过直接持股和关联公司代持两个渠道控制万科股权，架构已颇为复杂。","created_at":"2026-05-19 22:32:47","excerpts":[{"date":"2001","from":"万科年报","text":"将万佳百货72%股份转让给中国华润总公司"},{"date":"2001","from":"万科年报","text":"华润系合计控制万科约15%股权"},{"date":"2001","from":"万科年报","text":"华润北京置地代持B股2.71%"}],"files":["2026-04-10.md"]}];
+
+var query='',page=1,PER=15;
+marked.setOptions({breaks:true,gfm:true});
+
+var typeLabels={inconsistency:'不一致性',trend:'趋势变化',connection:'关联发现',evolution:'公司演变',prediction:'预测验证',relationship:'关系图谱',comparison:'对比分析',lesson:'投资启示',insight:'认知更新',signal:'信号捕捉',management:'管理评估',risk:'风险识别'};
+
+function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+function md(s){
+  if(!s)return '';
+  try{return marked.parse(s)}catch(e){return esc(s)}
+}
+
+function escRe(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+
+function hi(s,asMarkdown){
+  if(!s)return '';
+  var html=asMarkdown?md(s):esc(s);
+  if(!query)return html;
+  var terms=query.split(/\s+/).filter(Boolean);
+  for(var i=0;i<terms.length;i++){
+    var r=new RegExp('('+escRe(terms[i])+')','gi');
+    html=html.replace(r,'<span class="highlight">$1</span>');
+  }
+  return html;
+}
+
+function scoreClass(v){
+  var p=Math.round((v||0)*100);
+  if(p>=70)return 'score-high';
+  if(p>=50)return 'score-mid';
+  return 'score-low';
+}
+
+function render(){
+  var items=getFiltered();
+  var total=items.length;
+  var pages=Math.max(1,Math.ceil(total/PER));
+  if(page>pages)page=pages;
+  var start=(page-1)*PER;
+  var slice=items.slice(start,start+PER);
+  var el=document.getElementById('list');
+
+  if(slice.length===0){
+    el.innerHTML='<div class="empty">'+(query?'未找到匹配结果':'暂无内容')+'</div>';
+  }else{
+    el.innerHTML=slice.map(renderItem).join('');
+  }
+
+  // Pager
+  var pg=document.getElementById('pager');
+  if(pages<=1){pg.innerHTML='';renderLatex();return}
+
+  var h='<button onclick="go(1)" '+(page===1?'disabled':'')+'>&#171;</button>';
+  h+='<button onclick="go('+(page-1)+')" '+(page===1?'disabled':'')+'>&#8249;</button>';
+  var lo=Math.max(1,page-3),ph=Math.min(pages,page+3);
+  if(ph-lo<6){if(lo===1)ph=Math.min(pages,7);else lo=Math.max(1,pages-6)}
+  for(var i=lo;i<=ph;i++){
+    h+='<button onclick="go('+i+')"'+(i===page?' class="active"':'')+'>'+i+'</button>';
+  }
+  h+='<button onclick="go('+(page+1)+')" '+(page===pages?'disabled':'')+'>&#8250;</button>';
+  h+='<button onclick="go('+pages+')" '+(page===pages?'disabled':'')+'>&#187;</button>';
+  h+='<span class="info">'+total+' 条</span>';
+  pg.innerHTML=h;
+  renderLatex();
+}
+
+function go(p){page=p;render();window.scrollTo(0,0)}
+
+var searchTimer;
+function onSearch(){
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(function(){
+    query=document.getElementById('search').value.trim();
+    page=1;
+    TTS.stop();
+    render();
+  },200);
+}
+
+function renderLatex(){
+  if(typeof renderMathInElement==='function'){
+    renderMathInElement(document.getElementById('list'),{
+      delimiters:[
+        {left:'$$',right:'$$',display:true},
+        {left:'$',right:'$',display:false},
+        {left:'\\(',right:'\\)',display:false},
+        {left:'\\[',right:'\\]',display:true}
+      ],
+      throwOnError:false
+    });
+  }
+}
+
+
+function match(item){
+  if(!query)return true;
+  var terms=query.toLowerCase().split(/\s+/).filter(Boolean);
+  var all=[item.content,typeLabels[item.insight_type]].map(function(f){return(f||'').toLowerCase()}).join(' ');
+  return terms.every(function(t){return all.includes(t)});
+}
+function getFiltered(){return DATA.filter(match)}
+
+function renderItem(ins){
+  var label=typeLabels[ins.insight_type]||ins.insight_type;
+  var tc='t-'+(ins.insight_type||'connection');
+  var html='<div class="card">'
+    +'<span class="insight-type '+tc+'">'+esc(label)+'</span>'
+    +'<div class="insight-text">'+hi(ins.content,true)+'</div>';
+  var items=ins.excerpts||[];
+  if(items.length>0){
+    html+='<details class="sources"><summary>来源 ('+items.length+')</summary>';
+    for(var i=0;i<items.length;i++){
+      var s=items[i];
+      html+='<div class="source-item"><span class="from">['+(s.date||'')+'] '+(s.from||'')+'</span><span class="text">'+esc(s.text||'')+'</span></div>';
+    }
+    html+='</details>';
+  }else if(ins.files&&ins.files.length){
+    html+='<div class="sources" style="margin-top:8px">来源: '+esc(ins.files.join(', '))+'</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function textOfItem(item){
+  var p=[];
+  var label=typeLabels[item.insight_type]||item.insight_type||'';
+  if(label) p.push(label);
+  p.push(item.content||'');
+  function plain(s){if(!s)return '';var d=document.createElement('div');try{d.innerHTML=marked.parse(s)}catch(e){d.textContent=s}return(d.textContent||'').trim()}
+  return p.map(plain).join('。');
+}
+
+
+/* ===== TTS Module ===== */
+var TTS = (function(){
+  var synth = window.speechSynthesis;
+  var state = 'idle';
+  var sessionId = 0;
+  var items = [];
+  var total = 0;
+  var idx = 0;
+  var chunks = [];
+  var chunkIdx = 0;
+  var zhVoice = null;
+  var wdog = null;
+  var keepAlive = null;
+
+  function pickVoice(){
+    var v = synth.getVoices();
+    for(var i=0;i<v.length;i++) if(v[i].lang==='zh-CN') return v[i];
+    for(var i=0;i<v.length;i++) if(v[i].lang.indexOf('zh')===0) return v[i];
+    return null;
+  }
+  zhVoice = pickVoice();
+  if(synth.onvoiceschanged!==undefined) synth.onvoiceschanged=function(){zhVoice=pickVoice()};
+
+  function plain(s){
+    if(!s)return '';
+    var d=document.createElement('div');
+    try{d.innerHTML=marked.parse(s)}catch(e){d.textContent=s}
+    return (d.textContent||'').trim();
+  }
+
+  function chunk(text){
+    if(!text) return [];
+    var MAX=120, res=[], buf='';
+    var sents=text.split(/(?<=[。！？；\n])/);
+    for(var i=0;i<sents.length;i++){
+      var s=sents[i].trim();
+      if(!s) continue;
+      if(buf.length+s.length<=MAX){ buf+=s; continue; }
+      if(buf) res.push(buf);
+      if(s.length<=MAX){ buf=s; continue; }
+      var sub=s.split(/(?<=[，、,；：])/), sb='';
+      for(var j=0;j<sub.length;j++){
+        if(sb.length+sub[j].length<=MAX){ sb+=sub[j]; }
+        else{ if(sb) res.push(sb); sb=sub[j]; }
+      }
+      buf=sb;
+    }
+    if(buf) res.push(buf);
+    return res.length?res:[text.slice(0,MAX)];
+  }
+
+  function clearHL(){
+    document.querySelectorAll('.card.tts-speaking').forEach(function(c){c.classList.remove('tts-speaking')});
+  }
+
+  function highlight(){
+    clearHL();
+    var cards=document.querySelectorAll('#list .card');
+    var local=idx-(page-1)*PER;
+    if(local>=0&&local<cards.length){
+      cards[local].classList.add('tts-speaking');
+      cards[local].scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  }
+
+  function goPage(i){
+    var tp=Math.floor(i/PER)+1;
+    if(tp!==page){ page=tp; render(); }
+  }
+
+  var svgPlay='<svg viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg>';
+  var svgPause='<svg viewBox="0 0 16 16"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>';
+  var svgStop='<svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="1.5"/></svg>';
+  var eqBars='<span class="tts-eq"><span></span><span></span><span></span></span>';
+
+  function ui(){
+    var c=document.getElementById('ttsCtrl');
+    if(state==='idle'){
+      c.innerHTML='<button class="tts-btn-play" onclick="ttsPlay()" title="播放">'+svgPlay+'</button>';
+      clearHL();
+    }else if(state==='playing'){
+      c.innerHTML='<button class="tts-btn-play is-playing" onclick="ttsPause()" title="暂停">'+eqBars+'</button>'
+        +'<button class="tts-btn-stop" onclick="ttsStopBtn()" title="停止">'+svgStop+'</button>'
+        +'<span class="tts-status">'+(idx+1)+' / '+total+'</span>';
+    }else{
+      c.innerHTML='<button class="tts-btn-play" onclick="ttsResume()" title="继续">'+svgPlay+'</button>'
+        +'<button class="tts-btn-stop" onclick="ttsStopBtn()" title="停止">'+svgStop+'</button>'
+        +'<span class="tts-status">已暂停 '+(idx+1)+' / '+total+'</span>';
+    }
+  }
+
+  function clearWdog(){ if(wdog){clearTimeout(wdog);wdog=null} }
+  function startWdog(sid){
+    clearWdog();
+    wdog=setTimeout(function(){
+      if(sessionId!==sid||state!=='playing') return;
+      if(!synth.speaking&&!synth.pending) next(sid);
+    },8000);
+  }
+
+  function next(sid){
+    if(sid!==sessionId) return;
+    clearWdog();
+    if(!keepAlive) keepAlive=setInterval(function(){
+      if(synth.speaking&&state==='playing'){synth.pause();synth.resume()}
+    },10000);
+
+    if(chunkIdx>=chunks.length){
+      idx++;
+      if(idx>=total){ stop(); return; }
+      goPage(idx);
+      highlight();
+      chunks=chunk(textOfItem(items[idx]));
+      chunkIdx=0;
+      ui();
+    }
+    if(chunkIdx>=chunks.length){ next(sid); return; }
+
+    var u=new SpeechSynthesisUtterance(chunks[chunkIdx]);
+    u.lang='zh-CN'; u.rate=1.0;
+    if(zhVoice) u.voice=zhVoice;
+    u.onend=function(){ if(sid===sessionId){chunkIdx++;next(sid)} };
+    u.onerror=function(e){ if(sid===sessionId&&e.error!=='canceled'&&e.error!=='interrupted'){chunkIdx++;next(sid)} };
+    synth.speak(u);
+    startWdog(sid);
+  }
+
+  function play(){
+    synth.cancel();
+    sessionId++;
+    items=getFiltered();
+    total=items.length;
+    if(!total){ state='idle'; ui(); return; }
+    idx=(page-1)*PER;
+    if(idx>=total) idx=0;
+    goPage(idx);
+    highlight();
+    chunks=chunk(textOfItem(items[idx]));
+    chunkIdx=0;
+    state='playing';
+    ui();
+    next(sessionId);
+  }
+
+  function pause(){
+    synth.pause(); state='paused'; clearWdog(); ui();
+  }
+
+  function resume(){
+    synth.resume(); state='playing'; ui(); startWdog(sessionId);
+  }
+
+  function stop(){
+    sessionId++; synth.cancel(); state='idle'; clearWdog();
+    if(keepAlive){clearInterval(keepAlive);keepAlive=null}
+    ui();
+  }
+
+  function onPageJump(){
+    if(state==='idle') return;
+    synth.cancel();
+    var newIdx=(page-1)*PER;
+    if(newIdx>=total){ stop(); return; }
+    idx=newIdx;
+    chunks=chunk(textOfItem(items[idx]));
+    chunkIdx=0;
+    highlight(); ui();
+    if(state==='playing') next(sessionId);
+  }
+
+  return {play:play,pause:pause,resume:resume,stop:stop,onPageJump:onPageJump,
+    getState:function(){return state}};
+})();
+
+function ttsPlay(){ TTS.play(); }
+function ttsPause(){ TTS.pause(); }
+function ttsResume(){ TTS.resume(); }
+function ttsStopBtn(){ TTS.stop(); }
+
+var _origGo=go;
+go=function(p){ _origGo(p); TTS.onPageJump(); };
+
+
+render();
+</script>
+</body>
+</html>
